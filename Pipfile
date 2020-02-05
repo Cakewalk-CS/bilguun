@@ -7,6 +7,9 @@ verify_ssl = true
 
 [packages]
 peewee = "*"
+requests = "*"
+dotenv = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.6"

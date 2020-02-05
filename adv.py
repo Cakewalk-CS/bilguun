@@ -60,9 +60,9 @@ def random_walk(player, visited={}):
             visited[pre_room_id].update_room()
         choices = visited[room_id].untraveled_exits()
         if choices:
-            print('possible_directions')
+            print('-----possible_directions-------')
             choice = random.choice(choices)
-            print(f'coice {choice}')
+            print(f'coice {choice}\n')
             player.travel(choice)
             setattr(visited[room_id], choice, player.current_room)
             player.visited_path.append([room_id, choice])
@@ -84,7 +84,7 @@ def init_walk():
     headers = {'Authorization': AUTHORIZATION_TOKEN}
     res_data = requests.get(url=url, headers=headers)
     res_data = res_data.json()
-    print(res_data)
+    print(f'init_walk: {res_data}')
     # exit(1)
     # res_data.json()
     room_id, title, description, exits, coordinates, items, terrain, elevation = (res_data[k] for k in('room_id', 'title', 
@@ -94,9 +94,11 @@ def init_walk():
 starting_room = init_walk()
 player = Player(starting_room)
 visited = {}
+random_walk(player, visited)
+
 # visited = get_rooms()
 # player = get_player()
-random_walk(player, visited)
+
 # player = Player(world.starting_room)
 # random_walk(player)
 # i = 0
@@ -107,16 +109,5 @@ random_walk(player, visited)
 # print(i)
 
 
-
-######
-# UNCOMMENT TO WALK AROUND
-######
-# player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0])
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+visited_rooms = get_rooms()
+print(visited_room)

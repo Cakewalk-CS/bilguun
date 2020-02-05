@@ -29,7 +29,7 @@ class Room:
         yay_exits = []
         for direction in self.exits:
             if direction in manual_exits:
-                print(f'directions{direction}')
+                print(f'unvisited directions: {direction}')
                 yay_exits.append(direction)
             # if getattr(self, direction, None) is None:
         return yay_exits
@@ -50,7 +50,7 @@ class Room:
             possible_room = getattr(self, direction, None)
             if possible_room is not None:
                 rooms_visited.append((direction, possible_room.room_id))
-        print(self.room_id, rooms_visited)
+        print(f'update_room: room id: {self.room_id}, room visited: {rooms_visited}\n')
         RoomBackup.update({RoomBackup.connections: rooms_visited}).where(RoomBackup.room_id == self.room_id).execute()
 
 def opposite_direction(direction):
@@ -71,7 +71,7 @@ def get_rooms():
                                           room_info.exits, room_info.coordinates, room_info.items, 
                                           room_info.terrain, room_info.elevation)
         for dirroom_id in eval(room_info.connections):
-            print(dirroom_id)
+            # print(f'dirroom_id: {dirroom_id}')
             direction = dirroom_id[0]
             room_id = dirroom_id[1]
             if room_id in visited:
@@ -79,5 +79,7 @@ def get_rooms():
             elif room_id == old_room_id:
                 setattr(visited[old_room_id], opposite_direction(direction), visited[room_id])
         old_room_id = room_info.room_id
-
+    print(f'visited rooms: {len(visited)}')
     return visited
+
+

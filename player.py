@@ -21,14 +21,12 @@ class Player:
                 'Authorization': AUTHORIZATION_TOKEN,
                 'Content-Type': 'application/json'
             }
-            # print(headers) 
             request_data = {"direction": direction} 
-            print(request_data)
+            # print(f'request_data: {request_data}')
             url = 'https://lambda-treasure-hunt.herokuapp.com/api/adv/move/'
             r = requests.post(url = url, json = request_data, headers = headers)
-            # print(r.raw)
             res_data = r.json()
-            print(res_data)
+            print(f'res data \n {res_data} \n')
             room_id, title, description, exits, coordinates, items, terrain, elevation, cooldown  = (res_data[k] for k in('room_id', 'title', 
                 'description', 'exits', 'coordinates', 'items', 'terrain', 'elevation', 'cooldown'))
             self.current_room = Room(room_id, title, description, exits, coordinates, items, terrain, elevation)
@@ -55,7 +53,7 @@ class Player:
                             visited_path=self.visited_path).execute()
 def get_player():
     player_info = PlayerBackup.select().dicts()[0]
-    print(player_info)
+    print(f'player info: {player_info}')
     name, items, coins, current_room_id, cooldown, visited_path = (player_info[k] for k in('name', 'items', 
         'coins', 'current_room_id', 'cooldown', 'visited_path'))
     visited = get_rooms()
