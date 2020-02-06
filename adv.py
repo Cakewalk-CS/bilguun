@@ -1,11 +1,7 @@
 from player import Player, get_player
 from room import Room, get_rooms,opposite_direction
-# from world import World
 import random, time, requests
 from settings import AUTHORIZATION_TOKEN
-# from models import Room, Player
-# import random
-# from ast import literal_eval
 
 class Queue():
     def __init__(self):
@@ -20,63 +16,57 @@ class Queue():
     def size(self):
         return len(self.queue)
 
-
-# Loads the map into a dictionary
-# room_graph=literal_eval(open(map_file, "r").read())
-# world.load_graph(room_graph)
-
-# Print an ASCII map
-# world.print_rooms()
-
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
 traversal_path = []
 
-def add_to_visited(room_id, visited):
-    if room_id not in visited:
-        visited[room_id] = {'n':'?', 's':'?', 'e': '?', 'w':'?'}
-    return visited
-
-# def non_visited_exits(room_id, player, visited):
-#     choices = player.current_room.exits
-#     possible_choices = []
-#     for direction, new_room_id in visited[room_id]:
-#         if direction in choices and new_room_id == '?':
-#             possible_choices.append(direction)
-#     return possible_choices
+# def return_visited_path(player):
+#     print(f'---Visited Path: {player.visited_path} :---')
+#     if player.visited_path:
+#         pre_room_id = player.visited_path[-1][0]
+#         pre_room_dir = opposite_direction(player.visited_path[-1][1])
+#         return pre_room_id, pre_room_dir
 
 def random_walk(player, visited={}):
     queue = Queue()
+    #adds player's current room id into the queue
     queue.enqueue(player.current_room.room_id)
-    
     while queue.size() > 0:
+        #removes current room id from the queue
         room_id = queue.dequeue()
-        # visited = add_to_visited(room_id, visited)
-        visited[room_id]=player.current_room
+        #if room id is 0 break out of the loop
+        if room_id == 0:
+            break
+        # current room will become from room
+        visited[room_id] = player.current_room
+        #getting untraveled choices from current room
+        choices = visited[room_id].untravelled_exits
+        print(f'-------choices: {choices} :-----------')
+        # pre_room_id, pre_room_dir = return_visited_path(player)
         if player.visited_path:
             pre_room_id = player.visited_path[-1][0]
             pre_room_dir = opposite_direction(player.visited_path[-1][1])
-            setattr(visited[room_id], pre_room_dir, visited[pre_room_id])
-            visited[pre_room_id].update_room()
-        choices = visited[room_id].untraveled_exits()
         if choices:
-            print('possible_directions')
             choice = random.choice(choices)
-            print(f'coice {choice}')
+            print(f'-------chosen one: {choice} :-----------')
+            print(f'---traveling to an unknown room by going {choice}')
             player.travel(choice)
-            setattr(visited[room_id], choice, player.current_room)
+            # add to visited path if the path is
             player.visited_path.append([room_id, choice])
+            # player.pickup_items()
+            # player.check_items()
         else:
             choice = pre_room_dir
-            player.travel(choice)
-            if player.visited_path:
-                player.visited_path.pop()
-            else:
-                traversal_path.append(choice)
-                return visited
-        traversal_path.append(choice)
-        visited[room_id].update_room()
+            room_id = pre_room_id
+            print(f'-------travelling to {room_id} by going {choice} , backwards:----------')
+            player.travel(choice, room_id)
+            # if player.visited_path:
+            popped_choice = player.visited_path.pop()
+            print(f'-----popped: {popped_choice} :-------')
+            # else:
+            #     return visited
         queue.enqueue(player.current_room.room_id)
+
 
 
 def init_walk():
@@ -85,18 +75,22 @@ def init_walk():
     res_data = requests.get(url=url, headers=headers)
     res_data = res_data.json()
     print(res_data)
-    # exit(1)
-    # res_data.json()
     room_id, title, description, exits, coordinates, items, terrain, elevation = (res_data[k] for k in('room_id', 'title', 
         'description', 'exits', 'coordinates', 'items', 'terrain', 'elevation'))
     return Room(room_id, title, description, exits, coordinates, items, terrain, elevation)
 
+
+#Uncomment if starting fresh
 starting_room = init_walk()
 player = Player(starting_room)
 visited = {}
+
+#Uncomment when you already have info in db
 # visited = get_rooms()
 # player = get_player()
+
 random_walk(player, visited)
+
 # player = Player(world.starting_room)
 # random_walk(player)
 # i = 0
@@ -112,11 +106,12 @@ random_walk(player, visited)
 # UNCOMMENT TO WALK AROUND
 ######
 # player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0])
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# while True:
+#     print(player.current_room)
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0])
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")

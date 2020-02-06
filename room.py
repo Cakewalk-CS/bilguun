@@ -1,7 +1,8 @@
 from models import RoomBackup
 from peewee import IntegrityError
+from ast import literal_eval
 class Room:
-    def __init__(self, room_id, title, description, exits, coordinates, items, terrain=None, elevation=None):
+    def __init__(self, room_id, title, description, exits, coordinates, items, terrain=None, elevation=None, untravelled_exits=None, rooms_visited=None, not_in_db=True):
         self.room_id = room_id
         self.title = title
         self.description = description
@@ -10,48 +11,55 @@ class Room:
         self.items = items
         self.terrain = terrain
         self.elevation = elevation
-        self.n = None
-        self.s = None
-        self.e = None
-        self.w = None
-        self.save_room()
+        self.untravelled_exits = untravelled_exits if untravelled_exits else list(exits)
+        self.rooms_visited = rooms_visited if rooms_visited else {}
+        if not_in_db:
+            self.save_room()
 
-    def untraveled_exits(self):
-        manual_exits = []
-        if self.n is None:
-            manual_exits.append("n")
-        if self.s is None:
-            manual_exits.append("s")
-        if self.w is None:
-            manual_exits.append("w")
-        if self.e is None:
-            manual_exits.append("e")
-        yay_exits = []
-        for direction in self.exits:
-            if direction in manual_exits:
-                print(f'directions{direction}')
-                yay_exits.append(direction)
-            # if getattr(self, direction, None) is None:
-        return yay_exits
+    def __str__(self):
+        return (f'room_id: {self.room_id}, title: {self.title}, coordinates:{self.coordinates}, exits: {self.exits}'
+                f'items: {self.items}, terrain: {self.terrain}, elevation: {self.elevation}, untravelled_exits: {self.untravelled_exits}, rooms_visited: {self.rooms_visited}')
+    
+    def travelled(self, exit_dir, room_id, check_exits=False):
+        if check_exits and exit_dir in self.rooms_visited:
+            if len(self.rooms_visited) is not len(self.exits):
+                print(self.rooms_visited)
+                print(self.exits)
+                print(len(self.rooms_visited))
+                print(len(self.exits))
+                print(f'Major error')
+                print(f'We have gone back when there was potential')
+                print(f'This is somehting we should never do!!!')
+                print(f'{self}')
+                exit()
+        if  exit_dir in self.exits:
+            if exit_dir in self.untravelled_exits:
+                print(f'-------exit_dir : {exit_dir} : ------')
+                self.untravelled_exits.remove(exit_dir)
+            else:
+                print(f'----Traveled to somewhere we\'ve been before------')
+                print(f'----{self.untravelled_exits}----')
+                print(f'----direction traveling {exit_dir} ----')
+            self.rooms_visited[exit_dir] = room_id
+            self.update_room()
+        else:
+            print("The END has come!!!")
+            exit(1)
 
     def save_room(self):
         try:
             RoomBackup.create(room_id = self.room_id, title = self.title, description = self.description,
                             exits = self.exits, coordinates = self.coordinates, items = self.items,
-                            terrain = self.terrain, elevation = self.elevation)
+                            terrain = self.terrain, elevation = self.elevation, untravelled_exits = self.untravelled_exits)
         except IntegrityError:
+            print('---INTEGRITYERROR ROOM ALREADY CREATED_____')
             pass
             # RoomBackup.update(room_id = self.room_id, title = self.title, description = self.description,
             #     exits = self.exits, coordinates = self.coordinates, items = self.items,
             #     terrain = self.terrain, elevation = self.elevation)
     def update_room(self):
-        rooms_visited = []
-        for direction in self.exits:
-            possible_room = getattr(self, direction, None)
-            if possible_room is not None:
-                rooms_visited.append((direction, possible_room.room_id))
-        print(self.room_id, rooms_visited)
-        RoomBackup.update({RoomBackup.connections: rooms_visited}).where(RoomBackup.room_id == self.room_id).execute()
+        RoomBackup.update({RoomBackup.connections: self.rooms_visited, RoomBackup.items: self.items, RoomBackup.exits: self.exits,
+                            RoomBackup.untravelled_exits: self.untravelled_exits}).where(RoomBackup.room_id == self.room_id).execute()
 
 def opposite_direction(direction):
     if direction == 'n':
@@ -68,12 +76,10 @@ def get_rooms():
     old_room_id = ''
     for room_info in RoomBackup.select():
         visited[room_info.room_id] = Room(room_info.room_id, room_info.title, room_info.description, 
-                                          room_info.exits, room_info.coordinates, room_info.items, 
-                                          room_info.terrain, room_info.elevation)
-        for dirroom_id in eval(room_info.connections):
-            print(dirroom_id)
-            direction = dirroom_id[0]
-            room_id = dirroom_id[1]
+                                         literal_eval(room_info.exits), room_info.coordinates, room_info.items, 
+                                          room_info.terrain, room_info.elevation,
+                                          literal_eval(room_info.untravelled_exits), literal_eval(room_info.connections), False)
+        for direction, room_id in literal_eval(room_info.connections).items():
             if room_id in visited:
                 setattr(visited[room_info.room_id], direction, visited[room_id])
             elif room_id == old_room_id:
